@@ -4,16 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".activity.SingleImageActivity">
-   <LinearLayout
+   <RelativeLayout
+       android:id="@+id/rel_root"
        android:layout_width="match_parent"
-       android:layout_height="wrap_content"
-       android:orientation="vertical"
-       android:gravity="center">
+       android:layout_height="match_parent"
+
+      >
+       <!--android:adjustViewBounds="true"-->
        <ImageView
            android:id="@+id/iv_show"
            android:layout_width="match_parent"
            android:layout_height="wrap_content"
-           android:adjustViewBounds="true"
+         android:adjustViewBounds="true"
+           android:maxHeight="400dp"
 
            />
        <Button
@@ -21,16 +24,28 @@
            android:layout_width="wrap_content"
            android:layout_height="wrap_content"
            android:onClick="chooseLocalImage"
-           android:id="@+id/bt_choose_local_image"/>
+           android:id="@+id/bt_choose_local_image"
+           android:layout_below="@+id/iv_show"
+           android:layout_centerHorizontal="true"/>
        <Button
            android:text="@string/start_process"
            android:layout_width="wrap_content"
            android:layout_height="wrap_content"
            android:onClick="process"
-           android:id="@+id/bt_compare"/>
+           android:id="@+id/bt_compare"
+           android:layout_below="@+id/bt_choose_local_image"
+           android:layout_centerHorizontal="true"/>
+       <Button
+           android:text="显示表情"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:onClick="showEmoji"
+           android:layout_below="@+id/bt_compare"
+           android:layout_centerHorizontal="true"/>
        <TextView
            android:id="@+id/tv_notice"
            android:layout_width="wrap_content"
-           android:layout_height="wrap_content" />
-   </LinearLayout>
+           android:layout_height="wrap_content"
+           android:layout_below="@+id/bt_compare"/>
+   </RelativeLayout>
 </ScrollView>

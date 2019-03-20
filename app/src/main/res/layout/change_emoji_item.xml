@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rel_change_emoji"
+    android:layout_width="114dp"
+    android:layout_height="wrap_content"
+    android:background="@drawable/change_face_emoji_shape"
+    android:orientation="horizontal"
+   android:paddingLeft="13dp"
+   android:paddingRight="13dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+   >
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="horizontal"
+      >
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/hh_calendar_refresh"
+            android:layout_gravity="center_vertical"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="更换挡脸"
+            android:layout_gravity="center_vertical"/>
+    </LinearLayout>
+</RelativeLayout>

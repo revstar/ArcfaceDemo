@@ -9,7 +9,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
@@ -27,13 +30,17 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.Display;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.arcsoft.arcfacedemo.util.DisplayUtils;
 import com.arcsoft.face.AgeInfo;
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.Face3DAngle;
@@ -51,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -84,11 +92,29 @@ public class SingleImageActivity extends AppCompatActivity {
      */
     private Bitmap mBitmap = null;
 
-    private float screenWidth,screenHeight;
-    private int bitmapWidth,bitmapHeight;
+    private float screenWidth, screenHeight;
+    private int bitmapWidth, bitmapHeight;
 
     private Display mDisplay;
 
+    /**
+     * 根布局
+     */
+    RelativeLayout mRootLayout;
+
+    /**
+     * 改变表情集合
+     */
+    ArrayList<View>changeEmojiLayoutList=new ArrayList<>();
+    /**
+     * 表情包集合
+     */
+    ArrayList<View>emojiViewList=new ArrayList<>();
+
+    /**
+     * 表情包左上角点集合
+     */
+    ArrayList<PointF>pointLeftTopList=new ArrayList<>();
     /**
      * 所需的所有权限信息
      */
@@ -101,10 +127,11 @@ public class SingleImageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_process);
         initView();
-        mDisplay=getWindow().getWindowManager().getDefaultDisplay();
-        screenWidth=mDisplay.getWidth();
-        screenHeight=mDisplay.getHeight();
-        Log.d("screenWidthHeight>>>","screenWidth:"+screenWidth+",screenHeight:"+screenHeight);
+        Toast.makeText(SingleImageActivity.this,changeEmojiLayoutList.size()+"",Toast.LENGTH_SHORT).show();
+        mDisplay = getWindow().getWindowManager().getDefaultDisplay();
+        screenWidth = mDisplay.getWidth();
+        screenHeight = mDisplay.getHeight();
+        Log.d("screenWidthHeight>>>", "screenWidth:" + screenWidth + ",screenHeight:" + screenHeight);
         /**
          * 在选择图片的时候，在android 7.0及以上通过FileProvider获取Uri，不需要文件权限
          */
@@ -166,13 +193,14 @@ public class SingleImageActivity extends AppCompatActivity {
         tvNotice = findViewById(R.id.tv_notice);
         ivShow = findViewById(R.id.iv_show);
         ivShow.setImageResource(R.mipmap.faces);
+        mRootLayout = findViewById(R.id.rel_root);
 
-        Matrix imgMatrix=ivShow.getImageMatrix();
-        float[]matrixValues=new float[9];
+        Matrix imgMatrix = ivShow.getImageMatrix();
+        float[] matrixValues = new float[9];
         imgMatrix.getValues(matrixValues);
-        float xScale=matrixValues[Matrix.MSCALE_X];
-        float yScale=matrixValues[Matrix.MSCALE_Y];
-        Log.d("imageReact","xScale:"+xScale+",yScale"+yScale);
+        float xScale = matrixValues[Matrix.MSCALE_X];
+        float yScale = matrixValues[Matrix.MSCALE_Y];
+        Log.d("imageReact", "xScale:" + xScale + ",yScale" + yScale);
         progressDialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.processing)
                 .setView(new ProgressBar(this))
@@ -180,24 +208,24 @@ public class SingleImageActivity extends AppCompatActivity {
         ivShow.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()){
+                switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        float xradio=(float) bitmapWidth/screenWidth;
+                        float xradio = (float) bitmapWidth / screenWidth;
 //                        float yradio=()bitmapHeight/screenHeight;
-                        float yradio=(float) bitmapHeight/ivShow.getHeight();
-                        float eventX=event.getRawX()*xradio;
-                        float eventY=event.getRawY()*yradio;
-                        Log.d("eventXY>>>","eventX:"+eventX+",eventY:"+eventY);
-                        Log.d("xradio>>>","xradio:"+xradio+",yradio:"+yradio+",ivShow.getHeight()"+ivShow.getHeight()+",bitmapHeight"+bitmapHeight);
+                        float yradio = (float) bitmapHeight / ivShow.getHeight();
+                        float eventX = event.getRawX() * xradio;
+                        float eventY = event.getRawY() * yradio;
+                        Log.d("eventXY>>>", "eventX:" + eventX + ",eventY:" + eventY);
+                        Log.d("xradio>>>", "xradio:" + xradio + ",yradio:" + yradio + ",ivShow.getHeight()" + ivShow.getHeight() + ",bitmapHeight" + bitmapHeight);
                         for (int i = 0; i < faceInfoList.size(); i++) {
-                            Rect rect=faceInfoList.get(i).getRect();
-                           if (eventX>=rect.left&&eventX<=rect.right&&eventY>=rect.top&&eventY<=rect.bottom){
-                               Toast.makeText(SingleImageActivity.this,"获取到了表情包区域",Toast.LENGTH_SHORT).show();
-                           }
+                            Rect rect = faceInfoList.get(i).getRect();
+                            if (eventX >= rect.left && eventX <= rect.right && eventY >= rect.top && eventY <= rect.bottom) {
+                                Toast.makeText(SingleImageActivity.this, "获取到了表情包区域", Toast.LENGTH_SHORT).show();
+                            }
                         }
                         break;
-                        default:
-                            break;
+                    default:
+                        break;
                 }
                 return false;
             }
@@ -289,9 +317,9 @@ public class SingleImageActivity extends AppCompatActivity {
             return;
         }
         int width = bitmap.getWidth();
-        bitmapWidth=width;
+        bitmapWidth = width;
         int height = bitmap.getHeight();
-        bitmapHeight=height;
+        bitmapHeight = height;
         final Bitmap finalBitmap = bitmap;
         runOnUiThread(new Runnable() {
             @Override
@@ -310,7 +338,7 @@ public class SingleImageActivity extends AppCompatActivity {
             showNotificationAndFinish(notificationSpannableStringBuilder);
             return;
         }
-       faceInfoList = new ArrayList<>();
+        faceInfoList = new ArrayList<>();
 
 
         /**
@@ -331,6 +359,11 @@ public class SingleImageActivity extends AppCompatActivity {
          * 3.若检测结果人脸数量大于0，则在bitmap上绘制人脸框并且重新显示到ImageView，若人脸数量为0，则无法进行下一步操作，操作结束
          */
         if (faceInfoList.size() > 0) {
+            //初始化表情包集合数据
+            changeEmojiLayoutList.clear();
+            for (int i=0;i<faceInfoList.size();i++){
+                changeEmojiLayoutList.add(null);
+            }
             addNotificationInfo(notificationSpannableStringBuilder, null, "face list:\n");
             paint.setAntiAlias(true);
             paint.setStrokeWidth(5);
@@ -343,6 +376,7 @@ public class SingleImageActivity extends AppCompatActivity {
                 paint.setStyle(Paint.Style.FILL_AND_STROKE);
                 int textSize = faceInfoList.get(i).getRect().width() / 2;
                 paint.setTextSize(textSize);
+
 
                 canvas.drawText(String.valueOf(i), faceInfoList.get(i).getRect().left, faceInfoList.get(i).getRect().top, paint);
                 addNotificationInfo(notificationSpannableStringBuilder, null, "face[", String.valueOf(i), "]:", faceInfoList.get(i).toString(), "\n");
@@ -616,6 +650,123 @@ public class SingleImageActivity extends AppCompatActivity {
                 initEngine();
             } else {
                 Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    public void showEmoji(View view) {
+
+        float xradio = (float) bitmapWidth / screenWidth;
+        float yradio = (float) bitmapHeight / ivShow.getHeight();
+
+        Log.d("xradio","xradio"+xradio+",yradio"+yradio);
+
+        if (faceInfoList != null) {
+
+
+            for (int i = 0; i < faceInfoList.size(); i++) {
+                //绘制表情
+                final PointF pointLeftTop = new PointF();
+                Rect rect = faceInfoList.get(i).getRect();
+                //计算人脸rect在屏幕上的实际位置，左上角的点
+                pointLeftTop.x=rect.left/xradio;
+                pointLeftTop.y=rect.top/yradio;
+
+                pointLeftTopList.add(pointLeftTop);
+
+
+                View emojiView = LayoutInflater.from(this).inflate(R.layout.circle_emoji_item, null);
+                CircleImageView circleImageView = emojiView.findViewById(R.id.ig_circle_emoji);
+                circleImageView.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.emoji_one));
+
+                //调整表情包大小为rect宽高
+                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams((int) ((rect.right-rect.left)/xradio),(int) ((rect.right-rect.left)/xradio));
+
+                lp.leftMargin = (int) pointLeftTop.x;
+                lp.topMargin = (int) pointLeftTop.y;
+
+                Log.d("POintLeft","pointLeftTop.x"+pointLeftTop.x+",pointLeftTop.y"+pointLeftTop.y);
+                emojiView.setLayoutParams(lp);
+
+                mRootLayout.addView(emojiView);
+                emojiViewList.add(emojiView);
+            }
+        }
+
+        setListener();
+    }
+
+    private void setListener() {
+
+        final float xradio = (float) bitmapWidth / screenWidth;
+        final float yradio = (float) bitmapHeight / ivShow.getHeight();
+
+        //表情的监听事件
+        if (emojiViewList!=null){
+            for (int i=0;i<emojiViewList.size();i++){
+                final int index=i;
+                emojiViewList.get(index).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        //获取更换挡脸view，判断是否存在
+                        if (changeEmojiLayoutList.get(index)!=null){
+                            changeEmojiLayoutList.get(index).setVisibility(View.GONE);
+                            changeEmojiLayoutList.set(index,null);
+                        }else {
+
+                            if (pointLeftTopList!=null&&pointLeftTopList.get(index)!=null){
+
+                                View changeEmojiLayout=LayoutInflater.from(SingleImageActivity.this).inflate(R.layout.change_emoji_item,null);
+
+                                RelativeLayout.LayoutParams changeEmojiLp=new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+
+                                Rect rectF=faceInfoList.get(index).getRect();
+
+                                PointF letBottomPoint=new PointF();
+                                letBottomPoint.x=rectF.left/xradio;
+                                letBottomPoint.y=rectF.bottom/yradio;
+
+                                changeEmojiLp.leftMargin= (int) letBottomPoint.x;
+                                changeEmojiLp.topMargin= (int) letBottomPoint.y+5;
+
+                                changeEmojiLayout.setLayoutParams(changeEmojiLp);
+                                mRootLayout.addView(changeEmojiLayout);
+//                        changeEmojiLayoutList.add(changeEmojiLayout);
+                                changeEmojiLayoutList.set(index,changeEmojiLayout);
+
+                                setChangeEmojiListener();
+                                //更换挡脸监听事件
+                            }
+                        }
+
+                    }
+                });
+            }
+        }
+
+
+    }
+
+    /**
+     * 改变表情包布局监听事件
+     */
+    private void setChangeEmojiListener() {
+        if (changeEmojiLayoutList!=null){
+            for (int i=0;i<changeEmojiLayoutList.size();i++){
+                final  int index=i;
+                View changeEmojiView=changeEmojiLayoutList.get(index);
+                if (changeEmojiView!=null)
+                    changeEmojiView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(SingleImageActivity.this,"更换挡脸",Toast.LENGTH_SHORT).show();
+                        if (changeEmojiLayoutList.get(index)!=null){
+                            View emojiView=emojiViewList.get(index);
+                            CircleImageView circleImageView=emojiView.findViewById(R.id.ig_circle_emoji);
+                            circleImageView.setImageBitmap(BitmapFactory.decodeResource(getResources(),R.drawable.emoji_two));
+                        }
+                    }
+                });
             }
         }
     }
